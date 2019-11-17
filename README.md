@@ -34,6 +34,36 @@ perl ./scripts/nameSeq.pl \
 ```
 * Manually correct some name.
 
-## Sequence alignment
+### Outgroup selection
+* Using the sequence of budding yeast.
 
+## Sequence alignment
+* Align sequence with MAFFT
+```{bash}
+cd ~/course_project
+mafft --localpair --maxiterate 1000 ./data/COX1/COX1_anno.fa \
+> ./result/COX1_aligned.fas
+```
+
+* Align sequence with clustalw (MEGA built-in)
+    * Generate Option file in MEGA-GUI
+    * Run Following command:
+```{bash}
+# Use default setting (align codons)
+megacc -a clustal_align_coding.mao \
+-d COX1_anno.fa -o ~/course_project/result/COX1_aligned -f Fasta
+
+```
 ## Constuction of phylogentic tree
+### Neibour Join Tree
+* Use MEGA to construct NJ-Tree
+    * JC69 model
+    ```{bash}
+    cd ~/course_project/result/COX1
+    megacc -a ~/course_project/data/COX1/infer_NJ_nucleotide_JC69.mao -d ./COX1_aligned.fasta  -o ./
+    ```
+    * TN93 model
+    ```{bash}
+    cd ~/course_project/result/COX1
+    megacc -a ~/course_project/data/COX1/infer_NJ_nucleotide_TN93.mao -d ./COX1_aligned.fasta  -o ./
+    ```
