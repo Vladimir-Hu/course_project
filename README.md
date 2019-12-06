@@ -58,7 +58,7 @@ megacc -a clustal_align_coding.mao \
 # Use MEGA GUI to convert
 
 ```
-## Constuction of phylogentic tree
+## Constuction of phylogenetic tree
 ### Neibour Join Tree
 * Use MEGA to construct NJ-Tree
     * JC69 model
