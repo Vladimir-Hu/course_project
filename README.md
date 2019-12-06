@@ -52,6 +52,10 @@ mafft --localpair --maxiterate 1000 ./data/COX1/COX1_anno.fa \
 # Use default setting (align codons)
 megacc -a clustal_align_coding.mao \
 -d COX1_anno.fa -o ~/course_project/result/COX1_aligned -f Fasta
+# Also prepare nexus format for mrbayes use
+megacc -a clustal_align_coding.mao \
+-d COX1_anno.fa -o ~/course_project/result/COX1_aligned -f MEGA
+# Use MEGA GUI to convert
 
 ```
 ## Constuction of phylogentic tree
@@ -67,3 +71,50 @@ megacc -a clustal_align_coding.mao \
     cd ~/course_project/result/COX1
     megacc -a ~/course_project/data/COX1/infer_NJ_nucleotide_TN93.mao -d ./COX1_aligned.fasta  -o ./
     ```
+
+## NGS part of the project
+* Determine the target organism, in this study, it's mice. (*Mus musculus*)
+### Mapping mitochondria genomes
+* Download single reads
+```
+# SRRs used in this project
+
+```
+* Convert to fastq format for further useage
+```{bash}
+cd ~/course_project/data/WGS/mice
+# Function to convert files
+sra2fq(){
+fastq-dump -I --split-files --outdir ./fastq $1
+}
+export -f sra2fq
+# Conversion step
+ls | grep .sra | parallel -I% --max-args 1 -k -j 4 sra2fq %
+```
+* Use sickle to remove sequences with low score
+```{bash}
+# Manually check file type (see fqlist.txt)
+# guess-encoding.py script used in shell script is adopted from 
+#   https://github.com/brentp/bio-playground/blob/master/reads-utils/guess-encoding.py
+cd ~/course_project/
+cp ./scripts/chkFmt.sh ./data/WGS/mice/fastq
+cp ./scripts/guess-encoding.py ./data/WGS/mice/fastq
+cd ./data/WGS/mice/fastq/
+bash chkFmt.sh
+
+# Use perl script to generate runlist
+cd ~/course_project/
+cp ./scripts/genSickleRun.sh ./data/WGS/mice/fastq
+ls | grep .fastq > list.txt
+perl genSickleRun.pl list.txt > run.sh
+
+# Trim read files
+bash run.sh
+```
+
+* BWA MEM
+```{bash}
+bwa mem -t 8 -R '@RG\tID:foo_lane\tPL:illumina\tLB:library\tSM:sample_name' \
+~/course_project/data/WGS/mice/NC_005089.1.fasta\
+read_1.fq.gz read_2.fq.gz | samtools view -S -b - > sample_name.bam
+```
