@@ -202,5 +202,6 @@ tabix -h ftp://ftp-mouse.sanger.ac.uk/REL-1505-SNPs_Indels/mgp.v5.merged.snps_al
 
 * Base Quality Score Recalibration
 ```{bash}
+cd ~/course_project/data/WGS/mice/
 picard CreateSequenceDictionary R=NC_005089.1.fasta O=NC_005089.1.dict
 ```
