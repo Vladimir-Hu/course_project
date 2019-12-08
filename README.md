@@ -75,10 +75,74 @@ megacc -a clustal_align_coding.mao \
 ## NGS part of the project
 * Determine the target organism, in this study, it's mice. (*Mus musculus*)
 ### Mapping mitochondria genomes
+#### Note:
+In this part, there are lots of ocommands need to run in a batch mode, we used several Perl scripts to generate shell scripts. The outline of this procedure is as follows:
+* Generate a list of file which downloaded successfully
+```
+# After downloaded sra file and convert them into fastq format
+cd /path/to/fastq/file
+ls | grep .fastq > list.txt
+```
+* Run perl scripts to generate commands
+```{perl}
+#!/usr/bin/perl
+foreach(<>){
+    if(~~/(SRR\d+)_\d\.fastq/){
+    $file{$1}++;                            # Determine wheather this run name belongs to a pair-end file or not
+    }
+}
+
+foreach $key (keys(%file)){
+    if($file{$key}==1){                     # Single end
+        print("COMMAND se with parameter ${key}\n");
+    }
+    elsif($file{$key}==2){                  # Pair end
+        print("COMMAND pe with parameter ${key}\n");
+    }
+    else{
+    print "";
+    }
+}
+```
+#### Pre-processing of the NGS data
 * Download single reads
 ```
 # SRRs used in this project
-
+SRR5852569
+SRR5852570
+SRR5852571
+SRR5852572
+SRR5852573
+SRR5852576
+SRR5852578
+SRR5852579
+SRR5852580
+SRR5852581
+SRR5852582
+SRR5852583
+SRR5852584
+SRR5852585
+SRR5852586
+SRR5852588
+SRR5852589
+SRR5852590
+SRR5852591
+SRR5852592
+SRR5852595
+SRR5852596
+SRR5852594
+SRR5852597
+SRR5852598
+SRR5852599
+SRR5852600
+SRR5852601
+SRR5852602
+SRR5852603
+SRR5852604
+SRR5852605
+SRR5852607
+SRR5852608
+SRR5852609
 ```
 * Convert to fastq format for further useage
 ```{bash}
@@ -90,10 +154,12 @@ fastq-dump -I --split-files --outdir ./fastq $1
 export -f sra2fq
 # Conversion step
 ls | grep .sra | parallel -I% --max-args 1 -k -j 4 sra2fq %
+mkdir ./fastq
+mv *.fastq ./fastq
 ```
 * Use sickle to remove sequences with low score
 ```{bash}
-# Manually check file type (see fqlist.txt)
+# Manually check QC score type (see fqlist.txt)
 # guess-encoding.py script used in shell script is adopted from 
 #   https://github.com/brentp/bio-playground/blob/master/reads-utils/guess-encoding.py
 cd ~/course_project/
@@ -112,9 +178,29 @@ perl genSickleRun.pl list.txt > run.sh
 bash run.sh
 ```
 
-* BWA MEM
+* Mapping reads to the reference genome **NC_005089.1**
+    * Use `bwa mem` to map reads longer than 70bp
 ```{bash}
-bwa mem -t 8 -R '@RG\tID:foo_lane\tPL:illumina\tLB:library\tSM:sample_name' \
-~/course_project/data/WGS/mice/NC_005089.1.fasta\
-read_1.fq.gz read_2.fq.gz | samtools view -S -b - > sample_name.bam
+cd ~/course_project/scripts
+perl genBWA.pl list.txt > bwa.sh
+cp ./bwa.sh ~/course_project/data/WGS/mice/fastq/
+cd ~/course_project/data/WGS/mice/fastq
+bash bwa.sh
+```
+* Sort bwa files
+
+* Mark Duplicate (PCR Bias)
+
+* Generate index files
+
+* VCF file for BQSR
+```{bash}
+tabix -h ftp://ftp-mouse.sanger.ac.uk/REL-1505-SNPs_Indels/mgp.v5.merged.snps_all.dbSNP142.vcf.gz MT > MT_REL_1505.vcf
+# Note: Need to replace MT in this vcf file with NC_005089.1
+    # And save as REL.vcf
+```
+
+* Base Quality Score Recalibration
+```{bash}
+picard CreateSequenceDictionary R=NC_005089.1.fasta O=NC_005089.1.dict
 ```
